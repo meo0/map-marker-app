@@ -31,7 +31,7 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { title, description, latitude, longitude, category, color } = body
+    const { title, description, latitude, longitude, category, color, placeId, address } = body
 
     const marker = await prisma.marker.update({
       where: { id },
@@ -41,7 +41,9 @@ export async function PUT(
         latitude,
         longitude,
         category,
-        color
+        color,
+        placeId,
+        address
       }
     })
 

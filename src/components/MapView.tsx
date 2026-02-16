@@ -1,47 +1,44 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useEffect } from 'react'
 import {
-  APIProvider,
   Map,
   AdvancedMarker,
   Pin,
   InfoWindow,
-  MapMouseEvent
+  useMap
 } from '@vis.gl/react-google-maps'
 import type { Marker } from '@/types/marker'
 
 interface MapViewProps {
   markers: Marker[]
-  onMapClick: (lat: number, lng: number) => void
   onMarkerClick: (marker: Marker) => void
   selectedMarker: Marker | null
   onInfoWindowClose: () => void
+  selectedPlaceLocation: { lat: number; lng: number } | null
 }
 
-function MapContent({
+export default function MapView({
   markers,
-  onMapClick,
   onMarkerClick,
   selectedMarker,
-  onInfoWindowClose
+  onInfoWindowClose,
+  selectedPlaceLocation
 }: MapViewProps) {
-  const handleMapClick = useCallback(
-    (e: MapMouseEvent) => {
-      const detail = e.detail
-      if (detail.latLng) {
-        onMapClick(detail.latLng.lat, detail.latLng.lng)
-      }
-    },
-    [onMapClick]
-  )
+  const map = useMap()
+
+  useEffect(() => {
+    if (map && selectedPlaceLocation) {
+      map.panTo(selectedPlaceLocation)
+      map.setZoom(15)
+    }
+  }, [map, selectedPlaceLocation])
 
   return (
     <Map
-      defaultCenter={{ lat: 35.6812, lng: 139.7671 }} // Tokyo
+      defaultCenter={{ lat: 35.6812, lng: 139.7671 }}
       defaultZoom={12}
       mapId="map-marker-app"
-      onClick={handleMapClick}
       className="w-full h-full"
       gestureHandling="greedy"
     >
@@ -74,6 +71,9 @@ function MapContent({
                 {selectedMarker.category}
               </span>
             )}
+            {selectedMarker.address && (
+              <p className="text-gray-500 text-xs mb-1">{selectedMarker.address}</p>
+            )}
             {selectedMarker.description && (
               <p className="text-gray-600 text-sm">{selectedMarker.description}</p>
             )}
@@ -81,28 +81,5 @@ function MapContent({
         </InfoWindow>
       )}
     </Map>
-  )
-}
-
-export default function MapView(props: MapViewProps) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-
-  if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY') {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-gray-100">
-        <div className="text-center p-8">
-          <h2 className="text-xl font-bold text-red-600 mb-2">Google Maps API Key Required</h2>
-          <p className="text-gray-600">
-            Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your .env file
-          </p>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <APIProvider apiKey={apiKey}>
-      <MapContent {...props} />
-    </APIProvider>
   )
 }

@@ -17,7 +17,7 @@ export default function MarkerList({
     return (
       <div className="text-center text-gray-500 py-8">
         <p>マーカーがありません</p>
-        <p className="text-sm mt-2">地図をクリックして追加してください</p>
+        <p className="text-sm mt-2">+ 新しいマーカーで場所を検索して追加</p>
       </div>
     )
   }
@@ -41,6 +41,9 @@ export default function MarkerList({
             />
             <h3 className="font-medium truncate">{marker.title}</h3>
           </div>
+          {marker.address && (
+            <p className="text-gray-500 text-xs mt-1 truncate">{marker.address}</p>
+          )}
           {marker.category && (
             <span className="inline-block bg-gray-200 rounded px-2 py-0.5 text-xs mt-1">
               {marker.category}

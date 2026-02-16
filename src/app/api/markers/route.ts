@@ -18,7 +18,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { title, description, latitude, longitude, category, color } = body
+    const { title, description, latitude, longitude, category, color, placeId, address } = body
 
     if (!title || latitude === undefined || longitude === undefined) {
       return NextResponse.json(
@@ -34,7 +34,9 @@ export async function POST(request: Request) {
         latitude,
         longitude,
         category: category || null,
-        color: color || '#FF0000'
+        color: color || '#FF0000',
+        placeId: placeId || null,
+        address: address || null
       }
     })
 

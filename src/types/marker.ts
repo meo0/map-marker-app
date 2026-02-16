@@ -6,6 +6,8 @@ export interface Marker {
   longitude: number
   category: string | null
   color: string
+  placeId: string | null
+  address: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -17,4 +19,6 @@ export interface MarkerInput {
   longitude: number
   category?: string
   color?: string
+  placeId?: string
+  address?: string
 }

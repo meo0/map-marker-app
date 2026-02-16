@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { APIProvider } from '@vis.gl/react-google-maps'
 import dynamic from 'next/dynamic'
 import MarkerForm from '@/components/MarkerForm'
 import MarkerList from '@/components/MarkerList'
+import type { SelectedPlace } from '@/components/PlaceSearch'
 import type { Marker, MarkerInput } from '@/types/marker'
 
-// Dynamic import to avoid SSR issues with Google Maps
 const MapView = dynamic(() => import('@/components/MapView'), {
   ssr: false,
   loading: () => (
@@ -22,10 +23,12 @@ export default function Home() {
   const [markers, setMarkers] = useState<Marker[]>([])
   const [selectedMarker, setSelectedMarker] = useState<Marker | null>(null)
   const [editingMarker, setEditingMarker] = useState<Marker | null>(null)
-  const [pendingLocation, setPendingLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [isLoading, setIsLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
   // Fetch markers
   const fetchMarkers = useCallback(async () => {
@@ -46,13 +49,6 @@ export default function Home() {
     fetchMarkers()
   }, [fetchMarkers])
 
-  // Handle map click
-  const handleMapClick = useCallback((lat: number, lng: number) => {
-    setPendingLocation({ lat, lng })
-    setEditingMarker(null)
-    setViewMode('form')
-  }, [])
-
   // Handle marker click on map
   const handleMarkerClick = useCallback((marker: Marker) => {
     setSelectedMarker(marker)
@@ -70,6 +66,11 @@ export default function Home() {
     setSelectedMarker(null)
   }, [])
 
+  // Handle place selection
+  const handlePlaceSelect = useCallback((place: SelectedPlace) => {
+    setSelectedPlace(place)
+  }, [])
+
   // Create marker
   const handleCreateMarker = async (data: MarkerInput) => {
     try {
@@ -81,7 +82,7 @@ export default function Home() {
 
       if (res.ok) {
         await fetchMarkers()
-        setPendingLocation(null)
+        setSelectedPlace(null)
         setViewMode('list')
       }
     } catch (error) {
@@ -136,84 +137,99 @@ export default function Home() {
   // Cancel form
   const handleCancel = () => {
     setEditingMarker(null)
-    setPendingLocation(null)
+    setSelectedPlace(null)
     setViewMode('list')
   }
 
-  return (
-    <main className="h-screen flex flex-col">
-      {/* Header */}
-      <header className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
-        <h1 className="text-xl font-bold">📍 Map Marker</h1>
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="md:hidden p-2"
-        >
-          {sidebarOpen ? '✕' : '☰'}
-        </button>
-      </header>
-
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
-        <aside
-          className={`${
-            sidebarOpen ? 'w-80' : 'w-0'
-          } bg-white border-r flex-shrink-0 overflow-hidden transition-all duration-300 md:w-80`}
-        >
-          <div className="w-80 h-full flex flex-col">
-            <div className="p-4 border-b">
-              {viewMode === 'list' && (
-                <button
-                  onClick={() => {
-                    setEditingMarker(null)
-                    setPendingLocation(null)
-                    setViewMode('form')
-                  }}
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-                >
-                  + 新しいマーカー
-                </button>
-              )}
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4">
-              {isLoading ? (
-                <p className="text-center text-gray-500">読み込み中...</p>
-              ) : viewMode === 'list' ? (
-                <MarkerList
-                  markers={markers}
-                  onMarkerClick={handleListMarkerClick}
-                  selectedMarkerId={selectedMarker?.id}
-                />
-              ) : (
-                <MarkerForm
-                  initialData={editingMarker}
-                  pendingLocation={pendingLocation}
-                  onSubmit={editingMarker ? handleUpdateMarker : handleCreateMarker}
-                  onCancel={handleCancel}
-                  onDelete={editingMarker ? handleDeleteMarker : undefined}
-                />
-              )}
-            </div>
-          </div>
-        </aside>
-
-        {/* Map */}
-        <div className="flex-1 relative">
-          <MapView
-            markers={markers}
-            onMapClick={handleMapClick}
-            onMarkerClick={handleMarkerClick}
-            selectedMarker={selectedMarker}
-            onInfoWindowClose={handleInfoWindowClose}
-          />
-
-          {/* Instructions */}
-          <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur rounded-lg p-3 shadow-lg text-sm">
-            <p>💡 地図をクリックしてマーカーを追加</p>
-          </div>
+  if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY') {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center p-8">
+          <h2 className="text-xl font-bold text-red-600 mb-2">Google Maps API Key Required</h2>
+          <p className="text-gray-600">
+            Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your .env file
+          </p>
         </div>
       </div>
-    </main>
+    )
+  }
+
+  const selectedPlaceLocation = selectedPlace
+    ? { lat: selectedPlace.latitude, lng: selectedPlace.longitude }
+    : null
+
+  return (
+    <APIProvider apiKey={apiKey}>
+      <main className="h-screen flex flex-col">
+        {/* Header */}
+        <header className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
+          <h1 className="text-xl font-bold">📍 Map Marker</h1>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="md:hidden p-2"
+          >
+            {sidebarOpen ? '✕' : '☰'}
+          </button>
+        </header>
+
+        <div className="flex-1 flex overflow-hidden">
+          {/* Sidebar */}
+          <aside
+            className={`${
+              sidebarOpen ? 'w-80' : 'w-0'
+            } bg-white border-r flex-shrink-0 overflow-hidden transition-all duration-300 md:w-80`}
+          >
+            <div className="w-80 h-full flex flex-col">
+              <div className="p-4 border-b">
+                {viewMode === 'list' && (
+                  <button
+                    onClick={() => {
+                      setEditingMarker(null)
+                      setSelectedPlace(null)
+                      setViewMode('form')
+                    }}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+                  >
+                    + 新しいマーカー
+                  </button>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4">
+                {isLoading ? (
+                  <p className="text-center text-gray-500">読み込み中...</p>
+                ) : viewMode === 'list' ? (
+                  <MarkerList
+                    markers={markers}
+                    onMarkerClick={handleListMarkerClick}
+                    selectedMarkerId={selectedMarker?.id}
+                  />
+                ) : (
+                  <MarkerForm
+                    initialData={editingMarker}
+                    selectedPlace={selectedPlace}
+                    onPlaceSelect={handlePlaceSelect}
+                    onSubmit={editingMarker ? handleUpdateMarker : handleCreateMarker}
+                    onCancel={handleCancel}
+                    onDelete={editingMarker ? handleDeleteMarker : undefined}
+                  />
+                )}
+              </div>
+            </div>
+          </aside>
+
+          {/* Map */}
+          <div className="flex-1 relative">
+            <MapView
+              markers={markers}
+              onMarkerClick={handleMarkerClick}
+              selectedMarker={selectedMarker}
+              onInfoWindowClose={handleInfoWindowClose}
+              selectedPlaceLocation={selectedPlaceLocation}
+            />
+          </div>
+        </div>
+      </main>
+    </APIProvider>
   )
 }

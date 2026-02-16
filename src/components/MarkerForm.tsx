@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import PlaceSearch from '@/components/PlaceSearch'
+import type { SelectedPlace } from '@/components/PlaceSearch'
 import type { Marker, MarkerInput } from '@/types/marker'
 
 interface MarkerFormProps {
   initialData?: Marker | null
-  pendingLocation?: { lat: number; lng: number } | null
+  selectedPlace?: SelectedPlace | null
+  onPlaceSelect: (place: SelectedPlace) => void
   onSubmit: (data: MarkerInput) => void
   onCancel: () => void
   onDelete?: () => void
@@ -35,7 +38,8 @@ const CATEGORIES = [
 
 export default function MarkerForm({
   initialData,
-  pendingLocation,
+  selectedPlace,
+  onPlaceSelect,
   onSubmit,
   onCancel,
   onDelete
@@ -44,8 +48,8 @@ export default function MarkerForm({
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('')
   const [color, setColor] = useState('#FF0000')
-  const [latitude, setLatitude] = useState<number | ''>('')
-  const [longitude, setLongitude] = useState<number | ''>('')
+
+  const isEditing = !!initialData
 
   useEffect(() => {
     if (initialData) {
@@ -53,33 +57,68 @@ export default function MarkerForm({
       setDescription(initialData.description || '')
       setCategory(initialData.category || '')
       setColor(initialData.color)
-      setLatitude(initialData.latitude)
-      setLongitude(initialData.longitude)
-    } else if (pendingLocation) {
-      setLatitude(pendingLocation.lat)
-      setLongitude(pendingLocation.lng)
     }
-  }, [initialData, pendingLocation])
+  }, [initialData])
+
+  useEffect(() => {
+    if (selectedPlace && !isEditing) {
+      setTitle(selectedPlace.name)
+    }
+  }, [selectedPlace, isEditing])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title || latitude === '' || longitude === '') return
+    if (!title) return
 
-    onSubmit({
-      title,
-      description: description || undefined,
-      category: category || undefined,
-      color,
-      latitude: Number(latitude),
-      longitude: Number(longitude)
-    })
+    if (isEditing && initialData) {
+      onSubmit({
+        title,
+        description: description || undefined,
+        category: category || undefined,
+        color,
+        latitude: initialData.latitude,
+        longitude: initialData.longitude,
+        placeId: initialData.placeId || undefined,
+        address: initialData.address || undefined
+      })
+    } else if (selectedPlace) {
+      onSubmit({
+        title,
+        description: description || undefined,
+        category: category || undefined,
+        color,
+        latitude: selectedPlace.latitude,
+        longitude: selectedPlace.longitude,
+        placeId: selectedPlace.placeId,
+        address: selectedPlace.address
+      })
+    }
   }
+
+  const canSubmit = isEditing || !!selectedPlace
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-xl font-bold">
-        {initialData ? 'マーカーを編集' : '新しいマーカー'}
+        {isEditing ? 'マーカーを編集' : '新しいマーカー'}
       </h2>
+
+      {!isEditing && (
+        <PlaceSearch onPlaceSelect={onPlaceSelect} />
+      )}
+
+      {selectedPlace && !isEditing && (
+        <div className="bg-blue-50 rounded p-3 text-sm">
+          <p className="font-medium">{selectedPlace.name}</p>
+          <p className="text-gray-600 text-xs mt-1">{selectedPlace.address}</p>
+        </div>
+      )}
+
+      {isEditing && initialData?.address && (
+        <div className="bg-gray-50 rounded p-3 text-sm">
+          <p className="text-gray-600 text-xs">{initialData.address}</p>
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium mb-1">タイトル *</label>
@@ -136,37 +175,13 @@ export default function MarkerForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">緯度 *</label>
-          <input
-            type="number"
-            step="any"
-            value={latitude}
-            onChange={(e) => setLatitude(e.target.value ? Number(e.target.value) : '')}
-            className="w-full border rounded px-3 py-2"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">経度 *</label>
-          <input
-            type="number"
-            step="any"
-            value={longitude}
-            onChange={(e) => setLongitude(e.target.value ? Number(e.target.value) : '')}
-            className="w-full border rounded px-3 py-2"
-            required
-          />
-        </div>
-      </div>
-
       <div className="flex gap-2 pt-4">
         <button
           type="submit"
-          className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+          disabled={!canSubmit}
+          className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {initialData ? '更新' : '作成'}
+          {isEditing ? '更新' : '作成'}
         </button>
         <button
           type="button"
@@ -177,7 +192,7 @@ export default function MarkerForm({
         </button>
       </div>
 
-      {initialData && onDelete && (
+      {isEditing && onDelete && (
         <button
           type="button"
           onClick={onDelete}
