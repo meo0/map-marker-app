@@ -1,18 +1,10 @@
-import nodemailer from "nodemailer"
+import { Resend } from "resend"
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: Number(process.env.SMTP_PORT) === 465,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-})
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function sendOtpEmail(email: string, code: string) {
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM,
+  await resend.emails.send({
+    from: process.env.RESEND_FROM || "Map Marker <noreply@adp.meo0.com>",
     to: email,
     subject: `Map Marker ログインコード: ${code}`,
     text: `あなたのログインコードは ${code} です。\nこのコードは5分間有効です。\n\nこのメールに心当たりがない場合は無視してください。`,
