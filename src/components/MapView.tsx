@@ -8,6 +8,7 @@ import {
   InfoWindow,
   useMap
 } from '@vis.gl/react-google-maps'
+import { useTheme } from '@/components/ThemeProvider'
 import type { Marker } from '@/types/marker'
 
 interface MapViewProps {
@@ -26,6 +27,8 @@ export default function MapView({
   selectedPlaceLocation
 }: MapViewProps) {
   const map = useMap()
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
 
   useEffect(() => {
     if (map && selectedPlaceLocation) {
@@ -33,6 +36,15 @@ export default function MapView({
       map.setZoom(15)
     }
   }, [map, selectedPlaceLocation])
+
+  const infoStyles = {
+    bg: isDark ? '#1e293b' : '#ffffff',
+    text: isDark ? '#e2e8f0' : '#111827',
+    subText: isDark ? '#94a3b8' : '#374151',
+    mutedText: isDark ? '#94a3b8' : '#6b7280',
+    border: isDark ? '#334155' : '#e5e7eb',
+    badge: isDark ? '#334155' : '#e5e7eb',
+  }
 
   return (
     <Map
@@ -64,18 +76,35 @@ export default function MapView({
           }}
           onCloseClick={onInfoWindowClose}
         >
-          <div className="p-2 max-w-xs">
-            <h3 className="font-bold text-lg">{selectedMarker.title}</h3>
+          <div style={{ padding: '8px', maxWidth: '280px', color: infoStyles.text, background: infoStyles.bg, margin: '-13px -13px', borderRadius: '8px' }}>
+            <h3 style={{ fontWeight: 'bold', fontSize: '1.125rem' }}>{selectedMarker.title}</h3>
             {selectedMarker.category && (
-              <span className="inline-block bg-gray-200 rounded px-2 py-1 text-xs mb-2">
+              <span style={{ display: 'inline-block', backgroundColor: infoStyles.badge, borderRadius: '4px', padding: '2px 8px', fontSize: '0.75rem', marginBottom: '8px' }}>
                 {selectedMarker.category}
               </span>
             )}
             {selectedMarker.address && (
-              <p className="text-gray-500 text-xs mb-1">{selectedMarker.address}</p>
+              <p style={{ color: infoStyles.subText, fontSize: '0.75rem', marginBottom: '4px' }}>{selectedMarker.address}</p>
             )}
             {selectedMarker.description && (
-              <p className="text-gray-600 text-sm">{selectedMarker.description}</p>
+              <p style={{ color: infoStyles.subText, fontSize: '0.875rem' }}>{selectedMarker.description}</p>
+            )}
+            {selectedMarker.user && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', paddingTop: '8px', borderTop: `1px solid ${infoStyles.border}`, fontSize: '0.75rem', color: infoStyles.mutedText }}>
+                {selectedMarker.user.image ? (
+                  <img
+                    src={selectedMarker.user.image}
+                    alt=""
+                    style={{ width: '16px', height: '16px', borderRadius: '50%' }}
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: infoStyles.badge, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#fff' }}>
+                    {selectedMarker.user.name?.[0] || '?'}
+                  </div>
+                )}
+                <span>{selectedMarker.user.name || '匿名'}</span>
+              </div>
             )}
           </div>
         </InfoWindow>

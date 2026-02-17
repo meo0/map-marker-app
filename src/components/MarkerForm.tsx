@@ -99,7 +99,7 @@ export default function MarkerForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-xl font-bold">
+      <h2 className="text-xl font-bold dark:text-gray-100">
         {isEditing ? 'マーカーを編集' : '新しいマーカー'}
       </h2>
 
@@ -108,45 +108,45 @@ export default function MarkerForm({
       )}
 
       {selectedPlace && !isEditing && (
-        <div className="bg-blue-50 rounded p-3 text-sm">
-          <p className="font-medium">{selectedPlace.name}</p>
-          <p className="text-gray-600 text-xs mt-1">{selectedPlace.address}</p>
+        <div className="bg-blue-50 dark:bg-blue-900/30 rounded p-3 text-sm">
+          <p className="font-medium dark:text-gray-100">{selectedPlace.name}</p>
+          <p className="text-gray-700 dark:text-gray-300 text-xs mt-1">{selectedPlace.address}</p>
         </div>
       )}
 
       {isEditing && initialData?.address && (
-        <div className="bg-gray-50 rounded p-3 text-sm">
-          <p className="text-gray-600 text-xs">{initialData.address}</p>
+        <div className="bg-gray-50 dark:bg-slate-900 rounded p-3 text-sm">
+          <p className="text-gray-700 dark:text-gray-300 text-xs">{initialData.address}</p>
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium mb-1">タイトル *</label>
+        <label className="block text-sm font-medium mb-1 dark:text-gray-300">タイトル *</label>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full border rounded px-3 py-2"
+          className="w-full border dark:border-slate-600 rounded px-3 py-2 text-gray-900 dark:text-gray-100 dark:bg-slate-700"
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">説明</label>
+        <label className="block text-sm font-medium mb-1 dark:text-gray-300">説明</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full border rounded px-3 py-2"
+          className="w-full border dark:border-slate-600 rounded px-3 py-2 text-gray-900 dark:text-gray-100 dark:bg-slate-700"
           rows={3}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">カテゴリ</label>
+        <label className="block text-sm font-medium mb-1 dark:text-gray-300">カテゴリ</label>
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="w-full border rounded px-3 py-2"
+          className="w-full border dark:border-slate-600 rounded px-3 py-2 text-gray-900 dark:text-gray-100 dark:bg-slate-700"
         >
           <option value="">選択してください</option>
           {CATEGORIES.map((cat) => (
@@ -158,7 +158,7 @@ export default function MarkerForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">色</label>
+        <label className="block text-sm font-medium mb-1 dark:text-gray-300">色</label>
         <div className="flex flex-wrap gap-2">
           {COLORS.map((c) => (
             <button
@@ -166,7 +166,7 @@ export default function MarkerForm({
               type="button"
               onClick={() => setColor(c.value)}
               className={`w-8 h-8 rounded-full border-2 ${
-                color === c.value ? 'border-black' : 'border-gray-300'
+                color === c.value ? 'border-black dark:border-white' : 'border-gray-300 dark:border-slate-600'
               }`}
               style={{ backgroundColor: c.value }}
               title={c.name}
@@ -186,7 +186,7 @@ export default function MarkerForm({
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 bg-gray-200 py-2 px-4 rounded hover:bg-gray-300"
+          className="flex-1 bg-gray-200 dark:bg-slate-600 dark:text-gray-100 py-2 px-4 rounded hover:bg-gray-300 dark:hover:bg-slate-500"
         >
           キャンセル
         </button>

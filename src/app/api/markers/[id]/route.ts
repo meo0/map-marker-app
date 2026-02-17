@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 
-// GET single marker
+// GET single marker (公開)
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -9,7 +10,12 @@ export async function GET(
   try {
     const { id } = await params
     const marker = await prisma.marker.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        user: {
+          select: { id: true, name: true, image: true, role: true },
+        },
+      },
     })
 
     if (!marker) {
@@ -23,13 +29,41 @@ export async function GET(
   }
 }
 
-// PUT update marker
+// 認可チェック: 本人、member、admin のみ許可
+async function checkAuthorization(markerId: string) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { authorized: false, status: 401, error: 'Unauthorized' } as const
+  }
+
+  const marker = await prisma.marker.findUnique({ where: { id: markerId } })
+  if (!marker) {
+    return { authorized: false, status: 404, error: 'Marker not found' } as const
+  }
+
+  const isOwner = marker.userId === session.user.id
+  const isPrivileged = session.user.role === 'member' || session.user.role === 'admin'
+
+  if (!isOwner && !isPrivileged) {
+    return { authorized: false, status: 403, error: 'Forbidden' } as const
+  }
+
+  return { authorized: true, session, marker } as const
+}
+
+// PUT update marker (認証+認可)
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
+    const authResult = await checkAuthorization(id)
+
+    if (!authResult.authorized) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status })
+    }
+
     const body = await request.json()
     const { title, description, latitude, longitude, category, color, placeId, address } = body
 
@@ -43,8 +77,13 @@ export async function PUT(
         category,
         color,
         placeId,
-        address
-      }
+        address,
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, image: true, role: true },
+        },
+      },
     })
 
     return NextResponse.json(marker)
@@ -54,16 +93,20 @@ export async function PUT(
   }
 }
 
-// DELETE marker
+// DELETE marker (認証+認可)
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
-    await prisma.marker.delete({
-      where: { id }
-    })
+    const authResult = await checkAuthorization(id)
+
+    if (!authResult.authorized) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status })
+    }
+
+    await prisma.marker.delete({ where: { id } })
 
     return NextResponse.json({ message: 'Marker deleted' })
   } catch (error) {

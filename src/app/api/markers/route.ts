@@ -1,11 +1,17 @@
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 
-// GET all markers
+// GET all markers (公開)
 export async function GET() {
   try {
     const markers = await prisma.marker.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: { id: true, name: true, image: true, role: true },
+        },
+      },
     })
     return NextResponse.json(markers)
   } catch (error) {
@@ -14,9 +20,14 @@ export async function GET() {
   }
 }
 
-// POST new marker
+// POST new marker (認証必須)
 export async function POST(request: Request) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const { title, description, latitude, longitude, category, color, placeId, address } = body
 
@@ -36,8 +47,14 @@ export async function POST(request: Request) {
         category: category || null,
         color: color || '#FF0000',
         placeId: placeId || null,
-        address: address || null
-      }
+        address: address || null,
+        userId: session.user.id,
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, image: true, role: true },
+        },
+      },
     })
 
     return NextResponse.json(marker, { status: 201 })

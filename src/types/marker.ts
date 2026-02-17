@@ -1,3 +1,10 @@
+export interface MarkerUser {
+  id: string
+  name: string | null
+  image: string | null
+  role: string
+}
+
 export interface Marker {
   id: string
   title: string
@@ -8,6 +15,8 @@ export interface Marker {
   color: string
   placeId: string | null
   address: string | null
+  userId: string | null
+  user: MarkerUser | null
   createdAt: Date
   updatedAt: Date
 }
